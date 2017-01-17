@@ -2,12 +2,16 @@ package vipo.haozi.orclib.ui;
 
 import android.app.Activity;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.os.Vibrator;
 import android.support.v4.content.ContextCompat;
@@ -24,6 +28,8 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import com.googlecode.tesseract.android.TessBaseAPI;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -64,9 +70,10 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     private TimerTask autoFoucusTimer;
     private Timer focustimeAuto;
     protected boolean isRecogSuccess;
-    //private RecogThread recogThread;
+    private RecogThread recogThread;
+    private ServiceConnection recogConn;
+
     private int iTH_InitSmartVisionSDK = -1;
-    //private ServiceConnection recogConn;
 
     // 扫描区域坐标
     private int[] regionPos = new int[4];
@@ -196,16 +203,16 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         return mHandler;
     }
 
-//    public ServiceConnection initRecogConn() {
-//        if(recogConn == null){
-//            recogConn = new ServiceConnection() {
-//                @Override
-//                public void onServiceDisconnected(ComponentName name) {
-//                    recogConn = null;
-//                }
-//                @Override
-//                public void onServiceConnected(ComponentName name, IBinder service) {
-//                    try{
+    public ServiceConnection initRecogConn() {
+        if(recogConn == null){
+            recogConn = new ServiceConnection() {
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    recogConn = null;
+                }
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    try{
 //                        recogBinder = (RecogService.MyBinder) service;
 //                        iTH_InitSmartVisionSDK = recogBinder.getInitSmartVisionOcrSDK();
 //                        if (iTH_InitSmartVisionSDK == 0) {
@@ -217,16 +224,16 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
 //                            Toast.makeText(PhoneScanBaseActivity.this,log,Toast.LENGTH_LONG).show();
 //                            Log.i(TAG,log);
 //                        }
-//                    }catch (Exception e){
-//                        Toast.makeText(PhoneScanBaseActivity.this,"核心初始化错误",Toast.LENGTH_LONG).show();
-//                        Log.i(TAG,"核心初始化错误" + e.getMessage());
-//                        e.printStackTrace();
-//                    }
-//                }
-//            };
-//        }
-//        return recogConn;
-//    }
+                    }catch (Exception e){
+                        Toast.makeText(PhoneScanBaseActivity.this,"核心初始化错误",Toast.LENGTH_LONG).show();
+                        Log.i(TAG,"核心初始化错误" + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            };
+        }
+        return recogConn;
+    }
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
@@ -236,11 +243,10 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         int width = camera.getParameters().getPreviewSize().width;
         int height = camera.getParameters().getPreviewSize().height;
         previewImgData = CameraViewRotateUtils.rotateYUV420Degree90(data,width, height);
-//        if (iTH_InitSmartVisionSDK == 0) {
-//            synchronized (recogThread) {
-//                recogThread.run();
-//            }
-//        }
+        //进行识别
+        synchronized (recogThread) {
+            recogThread.run();
+        }
     }
 
     @Override
@@ -253,7 +259,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             refreshFlashIcon(false,R.drawable.flash_on);
             CameraSetting.getInstance(this).closedCameraFlash(camera);
         }
-//        recogThread = new RecogThread();
+        recogThread = new RecogThread();
     }
 
     protected void refreshFlashIcon(boolean isOn,int iconRes){
@@ -309,8 +315,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         if (camera != null) {
             try {
                 if (camera.getParameters().getSupportedFocusModes() != null
-                        && camera.getParameters().getSupportedFocusModes()
-                        .contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+                        && camera.getParameters().getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
                     camera.autoFocus(new Camera.AutoFocusCallback() {
                         public void onAutoFocus(boolean success, Camera camera) {
                             if (success) {
@@ -458,14 +463,14 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                 //获取预览尺寸
                 priviewSize = camera.getParameters().getPreviewSize();
                 //初始化扫描区域缓存
-                Rect scanareaRect = new Rect();
+                //Rect scanareaRect = new Rect();
                 //获取扫描坐标
-                if(iv_camera_scanarea.getGlobalVisibleRect(scanareaRect)){
-                    regionPos[0] = scanareaRect.left;
-                    regionPos[1] = scanareaRect.top;
-                    regionPos[2] = scanareaRect.right;
-                    regionPos[3] = scanareaRect.bottom;
-                }
+                //if(iv_camera_scanarea.getGlobalVisibleRect(scanareaRect)){
+                //    regionPos[0] = scanareaRect.left;
+                //    regionPos[1] = scanareaRect.top;
+                //    regionPos[2] = scanareaRect.right;
+                //    regionPos[3] = scanareaRect.bottom;
+                //}
 
                 //recogBinder.SetCurrentTemplate(ORC_ID);
                 //recogBinder.SetROI(regionPos, priviewSize.width, priviewSize.height);
@@ -473,23 +478,37 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                 isRefreshScanarea = false;
             }
 
+            String recogResultString = "";
+
             if (isTakePic) {
-                SavePicPath = savePicture();
-                //SavePicPath = savePreviewPic(previewImgData, camera);
+                //SavePicPath = savePicture();
+                Rect scanareaRect = new Rect();
+                iv_camera_scanarea.getGlobalVisibleRect(scanareaRect);
+                SavePicPath = CameraUtils.savePreviewPic(previewImgData, camera, scanareaRect);
                 if (SavePicPath != null && !"".equals(SavePicPath)) {
                     //recogBinder.LoadImageFile(SavePicPath);
                 }
             } else {
                 //recogBinder.LoadStreamNV21(previewImgData, priviewSize.height, priviewSize.width);
+                // 开始调用Tess函数对图像进行识别
+                TessBaseAPI baseApi = new TessBaseAPI();
+                baseApi.setDebug(true);
+                // 使用默认语言初始化BaseApi
+                baseApi.init(TessConstantConfig.TESSBASE_PATH, TessConstantConfig.DEFAULT_LANGUAGE_CHI);
+                Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera);
+                baseApi.setImage(imgBitmap);
+
+                // 获取返回值
+                recogResultString = baseApi.getUTF8Text();
+                baseApi.end();
             }
 
             //returnResult = recogBinder.Recognize(Devcode.devcode, ORC_ID);
 
             if (returnResult == 0) {
-                String recogResultString = "";
                 //String recogResultString = recogBinder.GetResults(nCharCount);
                 time = System.currentTimeMillis() - time;
-                // System.out.println("识别时间:" + time + " ms");
+                System.out.println("识别时间:" + time + " ms");
                 if ((recogResultString != null && !recogResultString.equals("") && nCharCount[0] > 0) || isTakePic) {
                     //没有点击拍照按钮下保存图片
                     if (!isTakePic) {
@@ -529,18 +548,18 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
      * */
     protected void recogResultHandle(String recogResultString){
         //取消自动对焦
-        if (autoFoucusTimer != null) {
-            autoFoucusTimer.cancel();
-            autoFoucusTimer = null;
-        }
+        //if (autoFoucusTimer != null) {
+        //    autoFoucusTimer.cancel();
+        //    autoFoucusTimer = null;
+        //}
         //关闭摄像头
-        camera = CameraSetting.getInstance(this).closeCamera(camera);
+        //camera = CameraSetting.getInstance(this).closeCamera(camera);
 
         //组装识别结果
-        ArrayList<String> list_recogSult = new ArrayList<>();
-        list_recogSult.add("电话:"+recogResultString);
-        ArrayList<String> savePath = new ArrayList<>();
-        savePath.add(SavePicPath);
+        //ArrayList<String> list_recogSult = new ArrayList<>();
+        //list_recogSult.add("电话:"+recogResultString);
+        //ArrayList<String> savePath = new ArrayList<>();
+        //savePath.add(SavePicPath);
         //跳转到结果页面
         //Intent intent = new Intent(PhoneScanBaseActivity.this, ShowResultActivity.class);
         //intent.putStringArrayListExtra("recogResult", list_recogSult);
@@ -548,10 +567,10 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         //intent.putExtra("templateName",wlci.template.get(selectedTemplateTypePosition).templateName);
         //intent.putExtra("templateName","电话识别");
         //startActivity(intent);
-        overridePendingTransition(
-                getResources().getIdentifier("zoom_enter", "anim",getApplication().getPackageName()),
-                getResources().getIdentifier("push_down_out", "anim", getApplication().getPackageName()));
-        finish();
+        //overridePendingTransition(
+        //        getResources().getIdentifier("zoom_enter", "anim",getApplication().getPackageName()),
+        //        getResources().getIdentifier("push_down_out", "anim", getApplication().getPackageName()));
+        //finish();
     }
 
     public String savePicture() {

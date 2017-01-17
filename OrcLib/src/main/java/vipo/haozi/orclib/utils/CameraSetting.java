@@ -281,10 +281,8 @@ public class CameraSetting {
 	 * @Title: ${enclosing_method}
 	 * @Description: 设置相机的详细参数
 	 */
-	public void setCameraParameters(Camera.PreviewCallback previewCallback,
-			SurfaceHolder surfaceHolder, Activity currentActivity,
-			Camera camera, float screenRatio, List<Integer> srcList,
-			boolean cancelAutoFocus) {
+	public void setCameraParameters(Camera.PreviewCallback previewCallback,SurfaceHolder surfaceHolder, Activity currentActivity,
+			Camera camera, float screenRatio, List<Integer> srcList,boolean cancelAutoFocus) {
 
 		if(camera == null){
 			return;

@@ -7,9 +7,11 @@ import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Build;
@@ -24,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -582,4 +585,52 @@ public class CameraUtils{
         return sdDir.toString();
     }
 
+    public static Bitmap getBitmapFromPreview(byte[] data,Camera camera){
+        //处理data
+        Camera.Size previewSize = camera.getParameters().getPreviewSize();//获取尺寸,格式转换的时候要用到
+        BitmapFactory.Options newOpts = new BitmapFactory.Options();
+        newOpts.inJustDecodeBounds = true;
+        YuvImage yuvimage = new YuvImage(
+                data,
+                ImageFormat.NV21,
+                previewSize.width,
+                previewSize.height,
+                null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 100, baos);// 80--JPG图片的质量[0-100],100最高
+        byte[] rawImage = baos.toByteArray();
+        //将rawImage转换成bitmap
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        return BitmapFactory.decodeByteArray(rawImage, 0, rawImage.length, options);
+    }
+
+    public static String savePreviewPic(byte[] data, Camera camera,Rect scanareaRect){
+        //获取尺寸,格式转换的时候要用到
+        Camera.Size previewSize = camera.getParameters().getPreviewSize();
+        //byte[] newData = CameraViewRotateUtils.rotateYUV420Degree90(data,previewSize.width, previewSize.height);
+        //YuvImage yuvimage = new YuvImage(newData,ImageFormat.NV21, previewSize.height, previewSize.width,null);
+
+        YuvImage yuvimage = new YuvImage(data,ImageFormat.NV21, previewSize.height, previewSize.width,null);
+
+        String PATH = Environment.getExternalStorageDirectory().toString()+ "/DCIM/Camera/";
+        File file = new File(PATH);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        String name = CameraUtils.pictureName();
+        String picPathString = PATH + "smartVisition" + name + ".jpg";
+        try {
+            FileOutputStream filecon = new FileOutputStream(picPathString);
+            if(scanareaRect != null){
+                yuvimage.compressToJpeg(scanareaRect, 100, filecon);// 80--JPG图片的质量[0-100],100最高
+            }else{
+                yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 100, filecon);// 80--JPG图片的质量[0-100],100最高
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return picPathString;
+    }
 }
