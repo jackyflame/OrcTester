@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="white">#ffffff</color>
+    <color name="viewfinder_frame">#f39912</color>
+
+    <color name="text_black">#0A0A0A</color>
+    <color name="text_blue">#5ABCEC</color>
+    <color name="text_black_light">#333333</color>
+
+    <color name="bg_blue_transparent">#0F5ABCEC</color>
+
+    <color name="transparent">#00000000</color>
+</resources>

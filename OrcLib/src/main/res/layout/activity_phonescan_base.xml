@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/re"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#000000">
+
+    <SurfaceView
+        android:id="@+id/surfaceview_camera"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" />
+
+    <ImageView
+        android:id="@+id/iv_camera_back"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/camera_back" />
+
+    <ImageView
+        android:id="@+id/iv_camera_flash"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/flash_off"/>
+
+    <ImageView
+        android:id="@+id/iv_camera_scanarea"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_below="@+id/iv_camera_back"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="20dp"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/scan_area_bg"/>
+
+    <ImageView
+        android:id="@+id/iv_scaner_line"
+        android:layout_width="wrap_content"
+        android:layout_height="2dp"
+        android:layout_alignTop="@+id/iv_camera_scanarea"
+        android:layout_alignLeft="@+id/iv_camera_scanarea"
+        android:layout_alignRight="@+id/iv_camera_scanarea"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/scanline"
+        android:visibility="visible"/>
+
+    <ImageButton
+        android:id="@+id/imbtn_takepic"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/take_pic_btn"
+        android:visibility="gone"
+        android:layout_alignTop="@+id/iv_camera_scanarea"/>
+
+</RelativeLayout>

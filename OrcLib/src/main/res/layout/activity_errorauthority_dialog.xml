@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/lin_bg"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="@color/transparent"
+    android:paddingLeft="15dp"
+    android:paddingRight="15dp"
+    android:gravity="center"
+    tools:context=".ui.ErrorAuthorityDailogActivity">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:background="@color/white"
+        android:padding="15dp"
+        android:layout_weight="1"
+        android:clickable="false"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="40dp"
+            android:text="@string/action_authority_error"
+            android:textSize="13sp"
+            android:textColor="@color/text_black_light"
+            android:id="@+id/txv_tips" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="@string/setting"
+            android:textColor="@color/text_blue"
+            android:background="@drawable/list_selector_circle"
+            android:textSize="13sp"
+            android:layout_gravity="right"
+            android:id="@+id/button_setting" />
+
+    </LinearLayout>
+
+</LinearLayout>
