@@ -47,6 +47,8 @@ import java.util.StringTokenizer;
 
 public class CameraUtils{
 
+    private static final String TAG = CameraUtils.class.getName();
+
     public static final String CPU_ARCHITECTURE_TYPE_32 = "32";
     public static final String CPU_ARCHITECTURE_TYPE_64 = "64";
     private static final String PROC_CPU_INFO_PATH = "/proc/cpuinfo";
@@ -459,7 +461,7 @@ public class CameraUtils{
     }
 
     public static void copyFile(Context context) {
-        String smartVisitionPath = getSDPath() + "/AndroidWT/smartVisition/";
+        String smartVisitionPath = getSDPath() + "/Yunlaba/orc/";
         String rootpath = getSDPath() + "/AndroidWT";
         AlertDialog.Builder versionName;
         if(!Environment.getExternalStorageState().equals("mounted")) {
@@ -470,7 +472,7 @@ public class CameraUtils{
         } else {
             try {
                 versionName = null;
-                InputStream iStream = context.getClass().getResourceAsStream("/assets/SmartVisition/version.txt");
+                InputStream iStream = context.getClass().getResourceAsStream("/assets/num.traineddata");
                 int size_is = iStream.available();
                 byte[] byte_new = new byte[size_is];
                 iStream.read(byte_new);

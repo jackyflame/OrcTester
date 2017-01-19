@@ -29,10 +29,7 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.googlecode.tesseract.android.TessBaseAPI;
-
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -42,6 +39,7 @@ import vipo.haozi.orclib.utils.CameraSetting;
 import vipo.haozi.orclib.utils.CameraUtils;
 import vipo.haozi.orclib.utils.CameraViewRotateUtils;
 import vipo.haozi.orclib.utils.SharedPreferencesHelper;
+import vipo.haozi.orclib.utils.TessHelper;
 
 import static android.Manifest.permission.CAMERA;
 import static android.support.v4.content.PermissionChecker.PERMISSION_GRANTED;
@@ -103,7 +101,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //加载资源文件到指定目录
-        //Utils.copyFile(this);
+        TessHelper.getInstance().init(this);
 
         if(isCameraGranted() == false){
             //提示权限不足
@@ -479,28 +477,32 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             }
 
             String recogResultString = "";
+            Rect scanareaRect = new Rect();
+            iv_camera_scanarea.getGlobalVisibleRect(scanareaRect);
 
             if (isTakePic) {
                 //SavePicPath = savePicture();
-                Rect scanareaRect = new Rect();
-                iv_camera_scanarea.getGlobalVisibleRect(scanareaRect);
                 SavePicPath = CameraUtils.savePreviewPic(previewImgData, camera, scanareaRect);
                 if (SavePicPath != null && !"".equals(SavePicPath)) {
                     //recogBinder.LoadImageFile(SavePicPath);
                 }
             } else {
-                //recogBinder.LoadStreamNV21(previewImgData, priviewSize.height, priviewSize.width);
-                // 开始调用Tess函数对图像进行识别
-                TessBaseAPI baseApi = new TessBaseAPI();
-                baseApi.setDebug(true);
-                // 使用默认语言初始化BaseApi
-                baseApi.init(TessConstantConfig.TESSBASE_PATH, TessConstantConfig.DEFAULT_LANGUAGE_CHI);
-                Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera);
-                baseApi.setImage(imgBitmap);
+                try{
+                    //recogBinder.LoadStreamNV21(previewImgData, priviewSize.height, priviewSize.width);
 
-                // 获取返回值
-                recogResultString = baseApi.getUTF8Text();
-                baseApi.end();
+                    Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera);
+                    imgBitmap = imgBitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    TessHelper.getTessBaseAPI().setRectangle(scanareaRect);
+                    TessHelper.getTessBaseAPI().setImage(imgBitmap);
+                    // 获取返回值
+                    recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+                    //TessHelper.getTessBaseAPI().end();
+                    System.out.println("识别结果:" +recogResultString);
+                    //TessHelper.getInstance().parseImageToString(TessConstantConfig.getTessDataDirectory()+"number.jpg");
+
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
             }
 
             //returnResult = recogBinder.Recognize(Devcode.devcode, ORC_ID);
