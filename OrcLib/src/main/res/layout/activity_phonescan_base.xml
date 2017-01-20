@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/re"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
@@ -57,11 +58,26 @@
         android:id="@+id/imbtn_takepic"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:layout_marginRight="20dp"
-        android:layout_marginTop="10dp"
-        android:layout_alignParentRight="true"
         android:background="@drawable/take_pic_btn"
-        android:visibility="gone"
-        android:layout_alignTop="@+id/iv_camera_scanarea"/>
+        android:visibility="visible"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="80dp"
+        android:layout_centerHorizontal="true"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@+id/imbtn_takepic"
+        android:layout_marginBottom="30dp"
+        android:id="@+id/txv_rst" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp"
+        android:layout_above="@+id/txv_rst"
+        android:id="@+id/img_rst" />
 
 </RelativeLayout>

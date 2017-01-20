@@ -27,6 +27,7 @@ import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -89,8 +90,9 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     private String SavePicPath;
 
     private View iv_camera_scanarea;
-    private ImageView iv_camera_back, iv_camera_flash;
+    private ImageView iv_camera_back, iv_camera_flash,img_rst;
     private ImageButton imbtn_takepic;
+    private TextView txv_rst;
     private Vibrator mVibrator;
 
     /**
@@ -148,6 +150,8 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         imbtn_takepic = (ImageButton) this.findViewById(R.id.imbtn_takepic);
         iv_camera_back = (ImageView) this.findViewById(R.id.iv_camera_back);
         iv_camera_flash = (ImageView) this.findViewById(R.id.iv_camera_flash);
+        img_rst = (ImageView) this.findViewById(R.id.img_rst);
+        txv_rst = (TextView) this.findViewById(R.id.txv_rst);
         iv_camera_scanarea = this.findViewById(R.id.iv_camera_scanarea);
 
         if (srcWidth == surfaceView.getWidth() || surfaceView.getWidth() == 0) {
@@ -482,22 +486,32 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
 
             if (isTakePic) {
                 //SavePicPath = savePicture();
-                SavePicPath = CameraUtils.savePreviewPic(previewImgData, camera, scanareaRect);
-                if (SavePicPath != null && !"".equals(SavePicPath)) {
-                    //recogBinder.LoadImageFile(SavePicPath);
+                //SavePicPath = CameraUtils.savePreviewPic(previewImgData, camera, scanareaRect);
+                //if (SavePicPath != null && !"".equals(SavePicPath)) {
+                //    //recogBinder.LoadImageFile(SavePicPath);
+                //}
+                Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera,scanareaRect);
+                img_rst.setImageBitmap(imgBitmap);
+                TessHelper.getTessBaseAPI().setImage(imgBitmap);
+                recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+                txv_rst.setText(recogResultString);
+                //震动提醒扫码成功
+                if(mVibrator == null){
+                    mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
                 }
+                mVibrator.vibrate(200);
             } else {
                 try{
                     //recogBinder.LoadStreamNV21(previewImgData, priviewSize.height, priviewSize.width);
 
-                    Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera);
-                    imgBitmap = imgBitmap.copy(Bitmap.Config.ARGB_8888, true);
-                    TessHelper.getTessBaseAPI().setRectangle(scanareaRect);
-                    TessHelper.getTessBaseAPI().setImage(imgBitmap);
-                    // 获取返回值
-                    recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+                    //Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera);
+                    //imgBitmap = imgBitmap.copy(Bitmap.Config.ARGB_8888, true);
+                    //TessHelper.getTessBaseAPI().setImage(imgBitmap);
+                    //TessHelper.getTessBaseAPI().setRectangle(scanareaRect);
+                    //// 获取返回值
+                    //recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+                    //System.out.println("识别结果:" +recogResultString);
                     //TessHelper.getTessBaseAPI().end();
-                    System.out.println("识别结果:" +recogResultString);
                     //TessHelper.getInstance().parseImageToString(TessConstantConfig.getTessDataDirectory()+"number.jpg");
 
                 }catch (Exception e){
@@ -505,6 +519,8 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                 }
             }
 
+            //拍照标记更新
+            isTakePic = false;
             //returnResult = recogBinder.Recognize(Devcode.devcode, ORC_ID);
 
             if (returnResult == 0) {

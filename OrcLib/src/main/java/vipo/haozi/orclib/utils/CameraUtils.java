@@ -588,22 +588,26 @@ public class CameraUtils{
     }
 
     public static Bitmap getBitmapFromPreview(byte[] data,Camera camera){
+        return getBitmapFromPreview(data,camera,null);
+    }
+
+    public static Bitmap getBitmapFromPreview(byte[] data,Camera camera,Rect scanareaRect){
         //处理data
         Camera.Size previewSize = camera.getParameters().getPreviewSize();//获取尺寸,格式转换的时候要用到
         BitmapFactory.Options newOpts = new BitmapFactory.Options();
         newOpts.inJustDecodeBounds = true;
-        YuvImage yuvimage = new YuvImage(
-                data,
-                ImageFormat.NV21,
-                previewSize.width,
-                previewSize.height,
-                null);
+        YuvImage yuvimage = new YuvImage(data,ImageFormat.NV21,previewSize.height,previewSize.width,null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 100, baos);// 80--JPG图片的质量[0-100],100最高
+        if(scanareaRect == null){
+            yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 100, baos);// 80--JPG图片的质量[0-100],100最高
+        }else{
+            yuvimage.compressToJpeg(scanareaRect, 100, baos);// 80--JPG图片的质量[0-100],100最高
+        }
         byte[] rawImage = baos.toByteArray();
         //将rawImage转换成bitmap
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        //options.inPreferredConfig = Bitmap.Config.RGB_565;
         return BitmapFactory.decodeByteArray(rawImage, 0, rawImage.length, options);
     }
 
@@ -615,7 +619,7 @@ public class CameraUtils{
 
         YuvImage yuvimage = new YuvImage(data,ImageFormat.NV21, previewSize.height, previewSize.width,null);
 
-        String PATH = Environment.getExternalStorageDirectory().toString()+ "/DCIM/Camera/";
+        String PATH = TessConstantConfig.getTessDataDirectory() + "scanImg/";
         File file = new File(PATH);
         if (!file.exists()) {
             file.mkdirs();
