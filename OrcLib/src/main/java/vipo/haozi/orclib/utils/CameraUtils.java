@@ -19,6 +19,7 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.format.Time;
+import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -57,79 +58,6 @@ public class CameraUtils{
 
     static {
         mIsKitKat = Build.VERSION.SDK_INT >= 19;
-    }
-
-    public static int[] convertYUV420_NV21toARGB8888(byte[] data, int width, int height) {
-        int size = width * height;
-        int offset = size;
-        int[] pixels = new int[size];
-        int i = 0;
-
-        for(int k = 0; i < size; k += 2) {
-            int y1 = data[i] & 255;
-            int y2 = data[i + 1] & 255;
-            int y3 = data[width + i] & 255;
-            int y4 = data[width + i + 1] & 255;
-            int u = data[offset + k] & 255;
-            int v = data[offset + k + 1] & 255;
-            u -= 128;
-            v -= 128;
-            pixels[i] = convertYUVtoARGB(y1, u, v);
-            pixels[i + 1] = convertYUVtoARGB(y2, u, v);
-            pixels[width + i] = convertYUVtoARGB(y3, u, v);
-            pixels[width + i + 1] = convertYUVtoARGB(y4, u, v);
-            if(i != 0 && (i + 2) % width == 0) {
-                i += width;
-            }
-
-            i += 2;
-        }
-
-        return pixels;
-    }
-
-    private static int convertYUVtoARGB(int y, int u, int v) {
-        int r = y + 1 * u;
-        int g = y - (int)(0.344F * (float)v + 0.714F * (float)u);
-        int b = y + 1 * v;
-        r = r > 255?255:(r < 0?0:r);
-        g = g > 255?255:(g < 0?0:g);
-        b = b > 255?255:(b < 0?0:b);
-        return -16777216 | r << 16 | g << 8 | b;
-    }
-
-    public static Bitmap zoomBitmap(Bitmap bitmap, int width, int height) {
-        int w = bitmap.getWidth();
-        int h = bitmap.getHeight();
-        Matrix matrix = new Matrix();
-        float scaleWidth = (float)width / (float)w;
-        float scaleHeight = (float)height / (float)h;
-        matrix.reset();
-        matrix.postScale(scaleWidth, scaleHeight);
-        Bitmap newbmp = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
-        return newbmp;
-    }
-
-    public static int computeSampleSize(BitmapFactory.Options options, int minSideLength, int maxNumOfPixels) {
-        int initialSize = computeInitialSampleSize(options, minSideLength, maxNumOfPixels);
-        int roundedSize;
-        if(initialSize <= 8) {
-            for(roundedSize = 1; roundedSize < initialSize; roundedSize <<= 1) {
-                ;
-            }
-        } else {
-            roundedSize = (initialSize + 7) / 8 * 8;
-        }
-
-        return roundedSize;
-    }
-
-    private static int computeInitialSampleSize(BitmapFactory.Options options, int minSideLength, int maxNumOfPixels) {
-        double w = (double)options.outWidth;
-        double h = (double)options.outHeight;
-        int lowerBound = maxNumOfPixels == -1?1:(int)Math.ceil(Math.sqrt(w * h / (double)maxNumOfPixels));
-        int upperBound = minSideLength == -1?128:(int)Math.min(Math.floor(w / (double)minSideLength), Math.floor(h / (double)minSideLength));
-        return upperBound < lowerBound?lowerBound:(maxNumOfPixels == -1 && minSideLength == -1?1:(minSideLength == -1?lowerBound:upperBound));
     }
 
     public static String pictureName() {
@@ -638,5 +566,27 @@ public class CameraUtils{
         }
 
         return picPathString;
+    }
+
+    public static void saveBitmap(Bitmap bitmap) {
+        Log.e(TAG, "保存图片");
+        String PATH = TessConstantConfig.getTessDataDirectory() + "scanImg/";
+        String picName = CameraUtils.pictureName()+".png";
+        File f = new File(PATH, picName);
+        if (f.exists()) {
+            f.delete();
+        }
+        try {
+            FileOutputStream out = new FileOutputStream(f);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            out.flush();
+            out.close();
+            Log.i(TAG, "已经保存");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }

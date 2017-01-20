@@ -39,6 +39,7 @@ import vipo.haozi.orclib.utils.CameraParametersUtils;
 import vipo.haozi.orclib.utils.CameraSetting;
 import vipo.haozi.orclib.utils.CameraUtils;
 import vipo.haozi.orclib.utils.CameraViewRotateUtils;
+import vipo.haozi.orclib.utils.ImageFilterUtils;
 import vipo.haozi.orclib.utils.SharedPreferencesHelper;
 import vipo.haozi.orclib.utils.TessHelper;
 
@@ -441,6 +442,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             focustimeAuto.cancel();
             focustimeAuto = null;
         }
+        TessHelper.getTessBaseAPI().end();
         if (camera != null) {
             camera = CameraSetting.getInstance(this).closeCamera(camera);
         }
@@ -491,10 +493,14 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                 //    //recogBinder.LoadImageFile(SavePicPath);
                 //}
                 Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera,scanareaRect);
+                //imgBitmap =  ImageFilterUtils.gray2Binary(imgBitmap);// 图片二值化
+                imgBitmap =  ImageFilterUtils.grayScaleImage(imgBitmap);// 图片灰度化
                 img_rst.setImageBitmap(imgBitmap);
                 TessHelper.getTessBaseAPI().setImage(imgBitmap);
                 recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+                TessHelper.getTessBaseAPI().clear();
                 txv_rst.setText(recogResultString);
+                CameraUtils.saveBitmap(imgBitmap);
                 //震动提醒扫码成功
                 if(mVibrator == null){
                     mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);

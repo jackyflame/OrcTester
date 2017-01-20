@@ -51,8 +51,12 @@ public class TessHelper {
         mTessBaseAPI.setDebug(true);
         // 使用默认语言初始化BaseApi
         mTessBaseAPI.init(TessConstantConfig.getTessDataDirectory(), TessConstantConfig.DEFAULT_LANGUAGE_NUM);
-        //baseApi.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST,"0123456789");
-        mTessBaseAPI.setVariable("classify_bln_numeric_mode","1");//numeric-only mode.
+        //只识别0123456789
+        mTessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789");
+        ////忽略ZXY
+        //SetVariable("tessedit_char_blacklist", "xyz");
+        //numeric-only mode.
+        //mTessBaseAPI.setVariable("classify_bln_numeric_mode","1");
     }
 
     public static TessBaseAPI getTessBaseAPI(){
@@ -76,32 +80,51 @@ public class TessHelper {
         } else {
             try {
                 //String outFileName = getSDPath() + TessConstantConfig.TESSBASE_PATH_NUM;
-                String outFileName = TessConstantConfig.getTessDataFilePath();
+                //String outFileName = TessConstantConfig.getTessDataFilePath();
                 //检查路径
                 File file = new File(TessConstantConfig.getTessDataFileDirectory());
                 if(!file.exists()) {
                     file.mkdirs();
                 }
-                //检查文件
-                File newfile = new File(outFileName);
-                if(newfile != null && newfile.exists() && newfile.isFile()) {
-                    newfile.delete();
+                String[] assetsFiles = context.getAssets().list("traineddata");
+                if(assetsFiles == null || assetsFiles.length == 0){
+                    Log.e(TAG,"-------empty assets files--------");
+                    return;
                 }
-                //重新创建新文件
-                newfile.createNewFile();
+                for(int i=0;i<assetsFiles.length;i++){
+                    //获取文件
+                    String outFileName = assetsFiles[i];
+                    String outFilePath = TessConstantConfig.getTessDataFileDirectory()+outFileName;
+                    //检查文件
+                    File newfile = new File(outFilePath);
+                    if(newfile != null && newfile.exists() && newfile.isFile()) {
+                        newfile.delete();
+                    }
+                    //重新创建新文件
+                    newfile.createNewFile();
 
-                //复制文件
-                InputStream inputStream = context.getClass().getResourceAsStream("/assets/" + TessConstantConfig.TESSBASE_NUM_FILENAME);
-                FileOutputStream myOutput = new FileOutputStream(outFileName);
-                byte[] buffer = new byte[1024];
+                    //复制文件
+                    InputStream inputStream = context.getClass().getResourceAsStream("/assets/traineddata/" + outFileName);
+                    if(inputStream == null){
+                        Log.e(TAG,"getResourceAsStream file ["+outFileName+"] from assets failed!");
+                        if(newfile != null && newfile.exists() && newfile.isFile()) {
+                            newfile.delete();
+                        }
+                        continue;
+                    }
+                    FileOutputStream myOutput = new FileOutputStream(outFilePath);
+                    byte[] buffer = new byte[1024];
 
-                int length;
-                while((length = inputStream.read(buffer)) > 0) {
-                    myOutput.write(buffer, 0, length);
+                    Log.i(TAG,"copyOrcFile :"+outFileName + " start......");
+                    int length;
+                    while((length = inputStream.read(buffer)) > 0) {
+                        myOutput.write(buffer, 0, length);
+                    }
+
+                    myOutput.flush();
+                    myOutput.close();
+                    Log.i(TAG,"copyOrcFile :"+outFileName + " finish!!");
                 }
-
-                myOutput.flush();
-                myOutput.close();
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e(TAG,"copyOrcFile failed");
