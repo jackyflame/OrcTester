@@ -308,4 +308,48 @@ public class ImageFilterUtils {
         int upperBound = minSideLength == -1?128:(int)Math.min(Math.floor(w / (double)minSideLength), Math.floor(h / (double)minSideLength));
         return upperBound < lowerBound?lowerBound:(maxNumOfPixels == -1 && minSideLength == -1?1:(minSideLength == -1?lowerBound:upperBound));
     }
+
+    private static Bitmap cropScanImg(Bitmap imgBitmap){
+        int width = imgBitmap.getWidth();
+        int height = imgBitmap.getHeight();
+        //获取左上裁剪点
+        int topX = 0;
+        int topY = 0;
+        for(int w=0;w<width;w++){
+            boolean isBreak = false;
+            for(int h=0;h<height;h++){
+                int pixel = imgBitmap.getPixel(w,h);
+                if(pixel == Color.BLACK){
+                    isBreak = true;
+                    break;
+                }else{
+                    topX = w;
+                    topY = h;
+                }
+            }
+            if(isBreak){
+                break;
+            }
+        }
+        //获取右下裁剪点
+        int bottomX = 0;
+        int bottomY = 0;
+        for(int w=0;w<width;w++){
+            boolean isBreak = false;
+            for(int h=0;h<height;h++){
+                int pixel = imgBitmap.getPixel(w,h);
+                if(pixel == Color.BLACK){
+                    isBreak = true;
+                    break;
+                }else{
+                    bottomX = w;
+                    bottomY = h;
+                }
+            }
+            if(isBreak){
+                break;
+            }
+        }
+        return imgBitmap;
+    }
 }

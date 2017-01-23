@@ -495,9 +495,12 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                 Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera,scanareaRect);
                 //imgBitmap =  ImageFilterUtils.gray2Binary(imgBitmap);// 图片二值化
                 imgBitmap =  ImageFilterUtils.grayScaleImage(imgBitmap);// 图片灰度化
+
+                imgBitmap.getPixel(0,0);
                 img_rst.setImageBitmap(imgBitmap);
                 TessHelper.getTessBaseAPI().setImage(imgBitmap);
                 recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+                //recogResultString = TessHelper.getTessBaseAPI().getResultIterator().getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD);
                 TessHelper.getTessBaseAPI().clear();
                 txv_rst.setText(recogResultString);
                 CameraUtils.saveBitmap(imgBitmap);
