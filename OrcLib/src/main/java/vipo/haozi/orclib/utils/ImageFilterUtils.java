@@ -1,5 +1,6 @@
 package vipo.haozi.orclib.utils;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -18,6 +19,13 @@ import android.graphics.Paint;
  */
 
 public class ImageFilterUtils {
+
+    static Bitmap a;
+    static Bitmap b;
+    static Bitmap c;
+    static Bitmap d;
+    static int screenWidth;
+    static int f;
 
     // 该函数实现对图像进行二值化处理
     public static Bitmap gray2Binary(Bitmap graymap) {
@@ -309,7 +317,7 @@ public class ImageFilterUtils {
         return upperBound < lowerBound?lowerBound:(maxNumOfPixels == -1 && minSideLength == -1?1:(minSideLength == -1?lowerBound:upperBound));
     }
 
-    private static Bitmap cropScanImg(Bitmap imgBitmap){
+    public static Bitmap cropScanImg(Bitmap imgBitmap){
         int width = imgBitmap.getWidth();
         int height = imgBitmap.getHeight();
         //获取左上裁剪点
@@ -334,9 +342,9 @@ public class ImageFilterUtils {
         //获取右下裁剪点
         int bottomX = 0;
         int bottomY = 0;
-        for(int w=0;w<width;w++){
+        for(int w=width-1;w>=0;w--){
             boolean isBreak = false;
-            for(int h=0;h<height;h++){
+            for(int h=height-1;h>=0;h--){
                 int pixel = imgBitmap.getPixel(w,h);
                 if(pixel == Color.BLACK){
                     isBreak = true;
@@ -350,6 +358,48 @@ public class ImageFilterUtils {
                 break;
             }
         }
+
+        if(bottomX <= topX || bottomY <= topY){
+            return imgBitmap;
+        }
+
+        try{
+            imgBitmap = Bitmap.createBitmap(imgBitmap,topX,topY,bottomX-topX,bottomY-topY);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
         return imgBitmap;
+    }
+
+    public void mattingImage(Activity paramActivity, Bitmap paramBitmap){
+//        new Mat();
+//        Mat localMat1 = new Mat();
+//        Mat localMat2 = new Mat();
+//        Mat localMat3 = new Mat();
+//        DisplayMetrics localDisplayMetrics = new DisplayMetrics();
+//        paramActivity.getWindowManager().getDefaultDisplay().getMetrics(localDisplayMetrics);
+//        screenWidth = localDisplayMetrics.widthPixels;
+//        f = screenWidth / 11;
+//        Utils.bitmapToMat(paramBitmap, localMat1);
+//        Mat localMat4 = localMat1.clone();
+//        Imgproc.cvtColor(localMat1, localMat2, 7);
+//        a = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(localMat2, a);
+//        Imgproc.adaptiveThreshold(localMat2, localMat3, 255.0D, 1, 0, 31, 15.0D);
+//        b = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(localMat3, b);
+//        Mat localMat5 = new Mat();
+//        Imgproc.erode(localMat3, localMat5, Imgproc.getStructuringElement(0, new t(20.0D, 3.0D)));
+//        c = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(localMat5, c);
+//        ArrayList localArrayList = new ArrayList();
+//        Mat localMat6 = new Mat();
+//        Imgproc.findContours(localMat5.clone(), localArrayList, localMat6, 3, 1);
+//        Imgproc.drawContours(localMat3, localArrayList, -1, new s(0.0D, 0.0D, 255.0D));
+//        d = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.RGB_565);
+//        Utils.matToBitmap(localMat3, d);
+//        if (this.g != null)
+//            this.g.onImageProcessing(localArrayList, localMat4);
     }
 }

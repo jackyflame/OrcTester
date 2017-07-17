@@ -50,7 +50,7 @@ public class TessHelper {
         mTessBaseAPI = new TessBaseAPI();
         mTessBaseAPI.setDebug(true);
         // 使用默认语言初始化BaseApi
-        mTessBaseAPI.init(TessConstantConfig.getTessDataDirectory(), TessConstantConfig.DEFAULT_LANGUAGE_NUM);
+        mTessBaseAPI.init(TessConstantConfig.getTessDataDirectory(), TessConstantConfig.DEFAULT_LANGUAGE_ENG);
         //只识别0123456789
         mTessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789");
         ////忽略ZXY
