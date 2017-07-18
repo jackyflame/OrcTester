@@ -10,6 +10,15 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
+import java.util.ArrayList;
+
 /**
  * Created by Android Studio.
  * ProjectName: shenbian_android_cloud_speaker
@@ -19,13 +28,6 @@ import android.graphics.Paint;
  */
 
 public class ImageFilterUtils {
-
-    static Bitmap a;
-    static Bitmap b;
-    static Bitmap c;
-    static Bitmap d;
-    static int screenWidth;
-    static int f;
 
     // 该函数实现对图像进行二值化处理
     public static Bitmap gray2Binary(Bitmap graymap) {
@@ -372,34 +374,71 @@ public class ImageFilterUtils {
         return imgBitmap;
     }
 
-    public void mattingImage(Activity paramActivity, Bitmap paramBitmap){
-//        new Mat();
-//        Mat localMat1 = new Mat();
-//        Mat localMat2 = new Mat();
-//        Mat localMat3 = new Mat();
-//        DisplayMetrics localDisplayMetrics = new DisplayMetrics();
-//        paramActivity.getWindowManager().getDefaultDisplay().getMetrics(localDisplayMetrics);
-//        screenWidth = localDisplayMetrics.widthPixels;
-//        f = screenWidth / 11;
-//        Utils.bitmapToMat(paramBitmap, localMat1);
-//        Mat localMat4 = localMat1.clone();
-//        Imgproc.cvtColor(localMat1, localMat2, 7);
-//        a = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(localMat2, a);
-//        Imgproc.adaptiveThreshold(localMat2, localMat3, 255.0D, 1, 0, 31, 15.0D);
-//        b = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(localMat3, b);
-//        Mat localMat5 = new Mat();
-//        Imgproc.erode(localMat3, localMat5, Imgproc.getStructuringElement(0, new t(20.0D, 3.0D)));
-//        c = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(localMat5, c);
-//        ArrayList localArrayList = new ArrayList();
-//        Mat localMat6 = new Mat();
-//        Imgproc.findContours(localMat5.clone(), localArrayList, localMat6, 3, 1);
-//        Imgproc.drawContours(localMat3, localArrayList, -1, new s(0.0D, 0.0D, 255.0D));
-//        d = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.RGB_565);
-//        Utils.matToBitmap(localMat3, d);
-//        if (this.g != null)
-//            this.g.onImageProcessing(localArrayList, localMat4);
+    public static void mattingImage(Activity paramActivity, Bitmap paramBitmap,ImageMattingCallback callback){
+
+        Mat localMat1 = new Mat();
+        Mat localMat2 = new Mat();
+        Mat localMat3 = new Mat();
+        ////获取屏幕的分辨率
+        //DisplayMetrics localDisplayMetrics = new DisplayMetrics();
+        //paramActivity.getWindowManager().getDefaultDisplay().getMetrics(localDisplayMetrics);
+        ////屏幕宽度
+        ////int screenWidth = localDisplayMetrics.widthPixels;
+        ////不明
+        ////int f = screenWidth / 11;
+        //讲bitmap转换成Mat数据
+        Utils.bitmapToMat(paramBitmap, localMat1);
+        //克隆原始数据
+        Mat localMat4 = localMat1.clone();
+        //颜色空间的转换
+        Imgproc.cvtColor(localMat1, localMat2, 7);
+        //创建一个空白的对应尺寸的bitmap
+        Bitmap a = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        //将Mat数据转换为bitmap
+        Utils.matToBitmap(localMat2, a);
+        //自适应二值化(src:要二值化的灰度图,dst:二值化后的图,maxValue:二值化后要设置的那个值,
+        //method:块计算的方法[ADAPTIVE_THRESH_MEAN_C 平均值，ADAPTIVE_THRESH_GAUSSIAN_C 高斯分布加权和]),
+        //type:二值化类型（CV_THRESH_BINARY 大于为最大值，CV_THRESH_BINARY_INV 小于为最大值）,
+        //blockSize:块大小（奇数，大于1）,delta:差值（负值也可以）)
+        //Imgproc.adaptiveThreshold(localMat2, localMat3, 255.0D, 1, 0, 31, 15.0D);
+        Imgproc.adaptiveThreshold(localMat2, localMat3, 255.0D, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 31, 15.0D);
+        //创建新的对应尺寸的空白bitmap
+        Bitmap b = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        //将Mat数据转换为bitmap
+        Utils.matToBitmap(localMat3, b);
+        //定义新的缓存矩阵数据
+        Mat localMat5 = new Mat();
+        //定义一个合适大小的核
+        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20.0D, 3.0D));
+        //扩大暗区（腐蚀）
+        Imgproc.erode(localMat3, localMat5, kernelErode);
+        //创建新的对应尺寸的空白bitmap
+        Bitmap c = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        //Mat转Bitmap
+        Utils.matToBitmap(localMat5, c);
+
+        //创建轮廓区域列表缓存
+        ArrayList<MatOfPoint> localArrayList = new ArrayList();
+        //定义新的缓存矩阵数据
+        Mat localMat6 = new Mat();
+        //边缘提取(image参数为已经二值化的原图;contours参数为检测的轮廓数组，每一个轮廓用一个MatOfPoint类型的List表示；
+        // hiararchy参数和轮廓个数相同mode表示轮廓的检索模式[CV_RETR_EXTERNAL表示只检测外轮廓,CV_RETR_LIST检测的轮廓不建立等级关系,
+        // CV_RETR_CCOMP建立两个等级的轮廓，上面的一层为外边界，里面的一层为内孔的边界信息。如果内孔内还有一个连通物体，这个物体的边界也在顶层。
+        // CV_RETR_TREE建立一个等级树结构的轮廓。])
+        Imgproc.findContours(localMat5.clone(), localArrayList, localMat6, 3, 1);
+        //绘制轮廓
+        Imgproc.drawContours(localMat3, localArrayList, -1, new Scalar(0.0D, 0.0D, 255.0D));
+
+        //绘制最终图像
+        Bitmap d = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.RGB_565);
+        Utils.matToBitmap(localMat3, d);
+        //调用回调函数
+        if (callback != null){
+            callback.onImageProcessing(localArrayList, localMat4, d);
+        }
+    }
+
+    public interface ImageMattingCallback{
+        void onImageProcessing(ArrayList<MatOfPoint> localArrayList,Mat localMat,Bitmap rstMap);
     }
 }

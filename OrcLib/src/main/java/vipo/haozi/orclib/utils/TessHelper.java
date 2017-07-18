@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.regex.Pattern;
 
 /**
  * Created by Android Studio.
@@ -51,8 +52,8 @@ public class TessHelper {
         mTessBaseAPI.setDebug(true);
         // 使用默认语言初始化BaseApi
         mTessBaseAPI.init(TessConstantConfig.getTessDataDirectory(), TessConstantConfig.DEFAULT_LANGUAGE_ENG);
-        //只识别0123456789
-        mTessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789");
+        ////只识别0123456789
+        //mTessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789");
         ////忽略ZXY
         //SetVariable("tessedit_char_blacklist", "xyz");
         //numeric-only mode.
@@ -191,5 +192,9 @@ public class TessHelper {
         String recognizedText = getTessAPI().getUTF8Text();
         //getTessAPI().end();
         return recognizedText;
+    }
+
+    public static boolean isMobilePhone(String paramString){
+        return Pattern.compile("^((13[0-9])|(14[0,9])|(15[\\d])|(17[0-9])|(18[0-9]))\\d{8}$").matcher(paramString).matches();
     }
 }

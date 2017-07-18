@@ -30,7 +30,12 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -113,6 +118,8 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             startActivity(intent);
             finish();
         }
+
+
 
         initContent();
         initView();
@@ -487,29 +494,10 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             iv_camera_scanarea.getGlobalVisibleRect(scanareaRect);
 
             if (isTakePic) {
-                //SavePicPath = savePicture();
-                //SavePicPath = CameraUtils.savePreviewPic(previewImgData, camera, scanareaRect);
-                //if (SavePicPath != null && !"".equals(SavePicPath)) {
-                //    //recogBinder.LoadImageFile(SavePicPath);
-                //}
+                //handleTackPic(scanareaRect);
+
                 Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera,scanareaRect);
-                //imgBitmap =  ImageFilterUtils.gray2Binary(imgBitmap);// 图片二值化
-                imgBitmap =  ImageFilterUtils.grayScaleImage(imgBitmap);// 图片灰度化
-
-                imgBitmap = ImageFilterUtils.cropScanImg(imgBitmap);
-
-                img_rst.setImageBitmap(imgBitmap);
-                TessHelper.getTessBaseAPI().setImage(imgBitmap);
-                recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
-                //recogResultString = TessHelper.getTessBaseAPI().getResultIterator().getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD);
-                TessHelper.getTessBaseAPI().clear();
-                txv_rst.setText(recogResultString);
-                CameraUtils.saveBitmap(imgBitmap);
-                //震动提醒扫码成功
-                if(mVibrator == null){
-                    mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
-                }
-                mVibrator.vibrate(200);
+                ImageFilterUtils.mattingImage(PhoneScanBaseActivity.this,imgBitmap,new OpenCvCallback());
             } else {
                 try{
                     //recogBinder.LoadStreamNV21(previewImgData, priviewSize.height, priviewSize.width);
@@ -531,10 +519,8 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
 
             //拍照标记更新
             isTakePic = false;
-            //returnResult = recogBinder.Recognize(Devcode.devcode, ORC_ID);
 
             if (returnResult == 0) {
-                //String recogResultString = recogBinder.GetResults(nCharCount);
                 time = System.currentTimeMillis() - time;
                 System.out.println("识别时间:" + time + " ms");
                 if ((recogResultString != null && !recogResultString.equals("") && nCharCount[0] > 0) || isTakePic) {
@@ -568,6 +554,36 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                 Log.i(TAG,"识别错误，错误码：" + returnResult);
             }
         }
+    }
+
+    protected String handleTackPic(Rect scanareaRect){
+        //SavePicPath = savePicture();
+        //SavePicPath = CameraUtils.savePreviewPic(previewImgData, camera, scanareaRect);
+        //if (SavePicPath != null && !"".equals(SavePicPath)) {
+        //    //recogBinder.LoadImageFile(SavePicPath);
+        //}
+        Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera,scanareaRect);
+        //imgBitmap =  ImageFilterUtils.gray2Binary(imgBitmap);// 图片二值化
+        imgBitmap =  ImageFilterUtils.grayScaleImage(imgBitmap);// 图片灰度化
+
+        //imgBitmap = ImageFilterUtils.cropScanImg(imgBitmap);
+
+        img_rst.setImageBitmap(imgBitmap);
+        TessHelper.getTessBaseAPI().setImage(imgBitmap);
+        String recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+
+        //recogResultString = TessHelper.getTessBaseAPI().getResultIterator().getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD);
+
+        TessHelper.getTessBaseAPI().clear();
+        txv_rst.setText(recogResultString);
+        CameraUtils.saveBitmap(imgBitmap);
+        //震动提醒扫码成功
+        if(mVibrator == null){
+            mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
+        }
+        mVibrator.vibrate(200);
+
+        return recogResultString;
     }
 
     /**
@@ -632,5 +648,63 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     protected void continueScanDely(long delyMsec){
         //delyMsec毫秒以后恢复识别功能（防止极短时间内重复识别）
         getHandler().sendEmptyMessageDelayed(HANDLER_RECOVERSCAN,delyMsec);
+    }
+
+    protected class OpenCvCallback implements ImageFilterUtils.ImageMattingCallback{
+
+        private DisplayMetrics metric;
+        private int width;
+        private int height;
+
+        @Override
+        public void onImageProcessing(ArrayList<MatOfPoint> paramList, Mat paramMat,Bitmap rstMap) {
+//            int i = 0;
+//            org.opencv.core.Rect localq = null;
+//            if (paramList.size() > 0 && i < paramList.size()){
+//                localq = Imgproc.boundingRect(paramList.get(i));
+//                if ((localq.width / localq.height >= 5) && (localq.height >= 20)){
+//
+//                }
+//            }
+//            while (i < paramList.size() && localq != null){
+//                i++;
+//                Log.i("gudd", "rect " + localq.toString() + "   rect-->tl " + localq.tl() + "    rect-->br " + localq.br());
+//                Mat localMat = new Mat(paramMat, localq);
+//                Bitmap localBitmap = Bitmap.createBitmap(localMat.width(), localMat.height(), Bitmap.Config.RGB_565);
+//                Utils.matToBitmap(localMat.clone(), localBitmap);
+//                this.width = this.metric.widthPixels;
+//                this.height = (this.width / 11);
+//                int j = localBitmap.getWidth();
+//                int k = localBitmap.getHeight();
+//                float f1 = this.width / j;
+//                float f2 = this.height / k;
+//                Matrix localMatrix = new Matrix();
+//                localMatrix.postScale(f1, f2);
+//                String str1 = doOcr(Bitmap.createBitmap(localBitmap, 0, 0, localBitmap.getWidth(), localBitmap.getHeight(), localMatrix, true));
+//                System.err.println("doOcr--->  " + str1);
+//                String str2 = str1.replaceAll("[^0-9]", "");
+//                if (TessHelper.isMobilePhone(str2)){
+//
+//                }
+//            }
+            doOcr(rstMap);
+        }
+
+        private String doOcr(Bitmap localBitmap){
+            img_rst.setImageBitmap(localBitmap);
+            TessHelper.getTessBaseAPI().setImage(localBitmap);
+            String recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
+            //recogResultString = TessHelper.getTessBaseAPI().getResultIterator().getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD);
+            TessHelper.getTessBaseAPI().clear();
+            txv_rst.setText(recogResultString);
+            CameraUtils.saveBitmap(localBitmap);
+            //震动提醒扫码成功
+            if(mVibrator == null){
+                mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
+            }
+            mVibrator.vibrate(200);
+            //返回识别结果
+            return recogResultString;
+        }
     }
 }
