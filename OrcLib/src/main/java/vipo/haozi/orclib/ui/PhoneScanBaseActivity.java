@@ -30,9 +30,10 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -40,11 +41,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import vipo.haozi.orclib.R;
+import vipo.haozi.orclib.task.ThreadMangaer;
 import vipo.haozi.orclib.utils.CameraParametersUtils;
 import vipo.haozi.orclib.utils.CameraSetting;
 import vipo.haozi.orclib.utils.CameraUtils;
 import vipo.haozi.orclib.utils.CameraViewRotateUtils;
 import vipo.haozi.orclib.utils.ImageFilterUtils;
+import vipo.haozi.orclib.utils.OpenCvHelper;
 import vipo.haozi.orclib.utils.SharedPreferencesHelper;
 import vipo.haozi.orclib.utils.TessHelper;
 
@@ -60,7 +63,7 @@ import static android.support.v4.content.PermissionChecker.PERMISSION_GRANTED;
  */
 public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceHolder.Callback, Camera.PreviewCallback, View.OnClickListener{
 
-    private static final String TAG = "CSpeaker";
+    private static final String TAG = "PhoneScan";
     private static final int HANDLER_RECOVERSCAN = 8008;
 
     private int srcWidth, srcHeight;
@@ -77,8 +80,6 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     protected boolean isRecogSuccess;
     private RecogThread recogThread;
     private ServiceConnection recogConn;
-
-    private int iTH_InitSmartVisionSDK = -1;
 
     // 扫描区域坐标
     private int[] regionPos = new int[4];
@@ -118,8 +119,6 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             startActivity(intent);
             finish();
         }
-
-
 
         initContent();
         initView();
@@ -255,7 +254,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         previewImgData = CameraViewRotateUtils.rotateYUV420Degree90(data,width, height);
         //进行识别
         synchronized (recogThread) {
-            recogThread.run();
+            ThreadMangaer.getInstance().excuteTaskInSingle(recogThread);
         }
     }
 
@@ -315,9 +314,9 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             this.finish();
         } else if (view.getId() == R.id.imbtn_takepic) {
             isTakePic = true;
-            Message msg = new Message();
-            msg.what = 3;
-            getHandler().sendMessage(msg);
+            //Message msg = new Message();
+            //msg.what = 3;
+            //getHandler().sendMessage(msg);
         }
     }
 
@@ -380,6 +379,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     protected void onResume() {
         super.onResume();
         OpenCameraAndSetParameters();
+        OpenCvHelper.getInstance().initOpencv(this);
     }
 
     @Override
@@ -473,31 +473,20 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             if (isRefreshScanarea && camera != null) {
                 //获取预览尺寸
                 priviewSize = camera.getParameters().getPreviewSize();
-                //初始化扫描区域缓存
-                //Rect scanareaRect = new Rect();
-                //获取扫描坐标
-                //if(iv_camera_scanarea.getGlobalVisibleRect(scanareaRect)){
-                //    regionPos[0] = scanareaRect.left;
-                //    regionPos[1] = scanareaRect.top;
-                //    regionPos[2] = scanareaRect.right;
-                //    regionPos[3] = scanareaRect.bottom;
-                //}
-
-                //recogBinder.SetCurrentTemplate(ORC_ID);
-                //recogBinder.SetROI(regionPos, priviewSize.width, priviewSize.height);
 
                 isRefreshScanarea = false;
             }
 
             String recogResultString = "";
+            //初始化扫描区域缓存
             Rect scanareaRect = new Rect();
+            //获取扫描坐标
             iv_camera_scanarea.getGlobalVisibleRect(scanareaRect);
 
             if (isTakePic) {
                 //handleTackPic(scanareaRect);
-
-                Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData,camera,scanareaRect);
-                ImageFilterUtils.mattingImage(PhoneScanBaseActivity.this,imgBitmap,new OpenCvCallback());
+                Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(previewImgData, camera, scanareaRect);
+                OpenCvHelper.getInstance().mattingImage(imgBitmap,new OpenCvCallback());
             } else {
                 try{
                     //recogBinder.LoadStreamNV21(previewImgData, priviewSize.height, priviewSize.width);
@@ -550,7 +539,6 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                     //Toast.makeText(getApplicationContext(),"识别错误，错误码：" + returnResult, Toast.LENGTH_LONG).show();
                 }
             }else{
-                //Toast.makeText(getApplicationContext(),"识别错误，错误码：" + returnResult, Toast.LENGTH_LONG).show();
                 Log.i(TAG,"识别错误，错误码：" + returnResult);
             }
         }
@@ -650,28 +638,43 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         getHandler().sendEmptyMessageDelayed(HANDLER_RECOVERSCAN,delyMsec);
     }
 
-    protected class OpenCvCallback implements ImageFilterUtils.ImageMattingCallback{
+    protected class OpenCvCallback implements OpenCvHelper.ImageMattingCallback{
 
-        private DisplayMetrics metric;
+        private DisplayMetrics metric = new DisplayMetrics();
         private int width;
         private int height;
 
+        public OpenCvCallback() {
+            //获取屏幕的分辨率
+            getWindowManager().getDefaultDisplay().getMetrics(metric);
+        }
+
         @Override
         public void onImageProcessing(ArrayList<MatOfPoint> paramList, Mat paramMat,Bitmap rstMap) {
-//            int i = 0;
-//            org.opencv.core.Rect localq = null;
-//            if (paramList.size() > 0 && i < paramList.size()){
-//                localq = Imgproc.boundingRect(paramList.get(i));
-//                if ((localq.width / localq.height >= 5) && (localq.height >= 20)){
-//
-//                }
-//            }
-//            while (i < paramList.size() && localq != null){
-//                i++;
-//                Log.i("gudd", "rect " + localq.toString() + "   rect-->tl " + localq.tl() + "    rect-->br " + localq.br());
-//                Mat localMat = new Mat(paramMat, localq);
-//                Bitmap localBitmap = Bitmap.createBitmap(localMat.width(), localMat.height(), Bitmap.Config.RGB_565);
-//                Utils.matToBitmap(localMat.clone(), localBitmap);
+            int i = 0;
+            org.opencv.core.Rect localq = null;
+            if (paramList.size() <= 0 || i >= paramList.size()){
+                //震动提醒扫码成功
+                if(mVibrator == null){
+                    mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
+                }
+                mVibrator.vibrate(200);
+                return;
+            }
+            while (i < paramList.size()){
+                //计算轮廓的垂直边界最小矩形
+                localq = Imgproc.boundingRect(paramList.get(i++));
+                if (localq == null){
+                    continue;
+                }
+                if ((localq.width / localq.height < 5) || (localq.height < 20)){
+                   continue;
+                }
+                Log.i("gudd", "rect " + localq.toString() + "   rect-->tl " + localq.tl() + "    rect-->br " + localq.br());
+                Mat localMat = new Mat(paramMat, localq);
+                Bitmap localBitmap = Bitmap.createBitmap(localMat.width(), localMat.height(), Bitmap.Config.ARGB_8888);
+                Utils.matToBitmap(localMat.clone(), localBitmap);
+
 //                this.width = this.metric.widthPixels;
 //                this.height = (this.width / 11);
 //                int j = localBitmap.getWidth();
@@ -680,29 +683,36 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
 //                float f2 = this.height / k;
 //                Matrix localMatrix = new Matrix();
 //                localMatrix.postScale(f1, f2);
-//                String str1 = doOcr(Bitmap.createBitmap(localBitmap, 0, 0, localBitmap.getWidth(), localBitmap.getHeight(), localMatrix, true));
-//                System.err.println("doOcr--->  " + str1);
-//                String str2 = str1.replaceAll("[^0-9]", "");
-//                if (TessHelper.isMobilePhone(str2)){
-//
-//                }
-//            }
-            doOcr(rstMap);
+//                String strRst = doOcr(Bitmap.createBitmap(localBitmap, 0, 0, localBitmap.getWidth(), localBitmap.getHeight(), localMatrix, true));
+                String strRst = doOcr(localBitmap);
+                System.err.println("doOcr--->  " + strRst);
+            }
+            //doOcr(rstMap);
         }
 
         private String doOcr(Bitmap localBitmap){
-            img_rst.setImageBitmap(localBitmap);
-            TessHelper.getTessBaseAPI().setImage(localBitmap);
+            try {
+                TessHelper.getTessBaseAPI().setImage(localBitmap);
+            }catch (RuntimeException e){
+                return "read failed";
+            }
             String recogResultString = TessHelper.getTessBaseAPI().getUTF8Text();
             //recogResultString = TessHelper.getTessBaseAPI().getResultIterator().getUTF8Text(TessBaseAPI.PageIteratorLevel.RIL_WORD);
             TessHelper.getTessBaseAPI().clear();
+            //UI反馈操作
             txv_rst.setText(recogResultString);
+            img_rst.setImageBitmap(localBitmap);
             CameraUtils.saveBitmap(localBitmap);
-            //震动提醒扫码成功
-            if(mVibrator == null){
-                mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
+            Log.i(TAG, "doOcr: "+recogResultString);
+            //结果处理
+            String strRst = recogResultString.replaceAll("[^0-9]", "");
+            if (TessHelper.isMobilePhone(strRst)){
+                //震动提醒扫码成功
+                if(mVibrator == null){
+                    mVibrator = (Vibrator) getApplication().getSystemService(Service.VIBRATOR_SERVICE);
+                }
+                mVibrator.vibrate(200);
             }
-            mVibrator.vibrate(200);
             //返回识别结果
             return recogResultString;
         }

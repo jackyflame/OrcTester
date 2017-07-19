@@ -2,8 +2,6 @@ package vipo.haozi.orclib.base;
 
 import android.app.Application;
 
-import org.opencv.android.OpenCVLoader;
-
 /**
  * Created by Android Studio.
  * ProjectName: OrcTester
@@ -15,6 +13,6 @@ import org.opencv.android.OpenCVLoader;
 public class BaseApplication extends Application{
 
     public BaseApplication() {
-        OpenCVLoader.initDebug();
+
     }
 }

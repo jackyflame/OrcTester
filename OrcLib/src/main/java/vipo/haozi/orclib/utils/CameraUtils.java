@@ -535,7 +535,6 @@ public class CameraUtils{
         //将rawImage转换成bitmap
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        //options.inPreferredConfig = Bitmap.Config.RGB_565;
         return BitmapFactory.decodeByteArray(rawImage, 0, rawImage.length, options);
     }
 
@@ -575,6 +574,8 @@ public class CameraUtils{
         File f = new File(PATH, picName);
         if (f.exists()) {
             f.delete();
+        }else{
+            f.getParentFile().mkdirs();
         }
         try {
             FileOutputStream out = new FileOutputStream(f);

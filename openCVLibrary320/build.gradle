@@ -18,5 +18,17 @@ android {
 
     dependencies {
         compile fileTree(include: ['*.jar'], dir: 'libs')
+        compile fileTree(dir: "$buildDir/native-libs", include: 'native-libs.jar')
     }
+}
+
+task nativeLibsToJar(type: Jar, description: 'create a jar archive of the native libs') {
+    destinationDir file("$buildDir/native-libs")
+    baseName 'native-libs'
+    from fileTree(dir: 'libs', include: '**/*.so')
+    into 'lib/'
+}
+
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn(nativeLibsToJar)
 }
