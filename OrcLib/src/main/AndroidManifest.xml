@@ -24,6 +24,12 @@
         android:supportsRtl="true">
 
         <activity
+            android:name=".ui.PhoneScanBaseOldActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|navigation"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
             android:name=".ui.PhoneScanBaseActivity"
             android:configChanges="orientation|keyboardHidden|screenSize|navigation"
             android:screenOrientation="portrait"
