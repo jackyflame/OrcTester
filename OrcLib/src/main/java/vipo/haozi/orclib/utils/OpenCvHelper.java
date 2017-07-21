@@ -59,7 +59,7 @@ public class OpenCvHelper {
         Mat localRetrun = srcMat.clone();
         //颜色空间的转换
         Imgproc.cvtColor(srcMat, localMat2, 7);
-
+        localRetrun = localMat2.clone();
         ////创建一个空白的对应尺寸的bitmap
         //Bitmap a = Bitmap.createBitmap(paramBitmap.getWidth(), paramBitmap.getHeight(), Bitmap.Config.ARGB_8888);
         ////将Mat数据转换为bitmap

@@ -331,6 +331,32 @@ public class CameraSetting {
 		}
 		try{
 			parameters.setPreviewFormat(ImageFormat.NV21);
+			//放大倍数
+			if(parameters.isZoomSupported()){
+				int zoom = 4;
+				if(zoom > parameters.getMaxZoom()){
+					zoom = parameters.getMaxZoom();
+				}
+				parameters.setZoom(zoom);
+			}
+
+			////设置测距区域
+			//if (parameters.getMaxNumMeteringAreas() > 0){
+			//	List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
+			//	// specify an area in center of image
+			//	Rect meteringRect = cacu;
+			//	// set weight to 60%
+			//	meteringAreas.add(new Camera.Area(meteringRect, 1000));
+			//	parameters.setMeteringAreas(meteringAreas);
+			//}
+
+			////设置聚焦区域
+			//if (parameters.getMaxNumFocusAreas() > 0) {
+			//	List<Camera.Area> focusAreas = new ArrayList<Camera.Area>();
+			//	focusAreas.add(new Camera.Area(focusRect, 1000));
+			//	parameters.setFocusAreas(focusAreas);
+			//}
+
 			camera.setParameters(parameters);
 			camera.setPreviewCallback(previewCallback);
 			camera.startPreview();
