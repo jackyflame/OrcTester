@@ -37,6 +37,8 @@ public class RecogThread extends Thread implements RecognizeTaskItf{
     private Rect scanareaRect;
     //时间计算戳
     private long time;
+    //时间计算戳
+    private long mattime;
     //刷新识别区域标记
     private boolean isRefreshScanarea = true;
     // 扫描视频数据
@@ -144,7 +146,9 @@ public class RecogThread extends Thread implements RecognizeTaskItf{
                 setRecogingStop();
                 return;
             }
+            Log.i(TAG, "----->>starting recog from MatOfPoint list["+paramList.size()+"]");
             while (i < paramList.size()){
+                mattime = System.currentTimeMillis();
                 //计算轮廓的垂直边界最小矩形
                 localq = Imgproc.boundingRect(paramList.get(i++));
                 if (localq == null){
@@ -160,14 +164,13 @@ public class RecogThread extends Thread implements RecognizeTaskItf{
                 Mat localMat = new Mat(paramMat, localq);
                 Bitmap localBitmap = Bitmap.createBitmap(localMat.width(), localMat.height(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(localMat.clone(), localBitmap);
-
                 //如果成功识别电话号码，直接完成识别
                 if (TessHelper.isMobilePhone(recogOnTessert(localBitmap))){
                     break;
                 }
             }
             setRecogingStop();
-            Log.i(TAG, "------------->>Recoging finished...");
+            Log.i(TAG, "------------->>Recoging finished["+"识别时间:" + (System.currentTimeMillis() - time) + " ms]");
         }
     }
 
@@ -204,8 +207,7 @@ public class RecogThread extends Thread implements RecognizeTaskItf{
         //进行识别
         String strRst = doOcr(localBitmap);
         //记录识别时间
-        time = System.currentTimeMillis() - time;
-        Log.i(TAG,"识别时间:" + time + " ms");
+        Log.i(TAG,"识别时间:" + (System.currentTimeMillis() - mattime) + " ms");
         String[] rcgArray = strRst.split("[^0-9]");
         for(String str : rcgArray){
             if(TessHelper.isMobilePhone(str)){
