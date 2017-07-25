@@ -332,13 +332,14 @@ public class CameraSetting {
 		try{
 			parameters.setPreviewFormat(ImageFormat.NV21);
 			//放大倍数
-			if(parameters.isZoomSupported()){
-				int zoom = 4;
-				if(zoom > parameters.getMaxZoom()){
-					zoom = parameters.getMaxZoom();
+			if (parameters.isZoomSupported()) {
+				int zoom = (parameters.getMaxZoom() * 1) / 10;
+				if (zoom < parameters.getMaxZoom() && zoom > 0) {
+					parameters.setZoom(zoom);
 				}
 				parameters.setZoom(zoom);
 			}
+			parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
 
 			////设置测距区域
 			//if (parameters.getMaxNumMeteringAreas() > 0){

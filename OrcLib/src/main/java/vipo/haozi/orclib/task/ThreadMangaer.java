@@ -1,5 +1,7 @@
 package vipo.haozi.orclib.task;
 
+import android.util.Log;
+
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -12,6 +14,10 @@ import java.util.concurrent.Executors;
  */
 
 public class ThreadMangaer {
+
+    private static final String TAG = "RecogThread";
+    private boolean pauseTaskLine = false;
+    private RecogThread nowTask;
 
     Executor executorSingle = Executors.newSingleThreadExecutor();
     Executor executorFixed = Executors.newFixedThreadPool(5);
@@ -31,7 +37,25 @@ public class ThreadMangaer {
         executorSingle.execute(task);
     }
 
+    public void excuteTaskInSingle(RecogThread task){
+        if(task.isAlive()){
+            Log.i(TAG, "[ThreadMangaer]------------->>RecogThread is running");
+            return;
+        }else if(RecogThread.isRecoging()){
+            Log.i(TAG, "[ThreadMangaer]------------->>RecogThread is isRecoging");
+            return;
+        }else if(pauseTaskLine == true){
+            Log.i(TAG, "[ThreadMangaer]------------->>taskline is paused");
+            return;
+        }
+        executorSingle.execute(task);
+    }
+
     public void excuteTaskInFixed(Thread task){
         executorFixed.execute(task);
+    }
+
+    public void setPauseTaskLine(boolean pauseTaskLine){
+        this.pauseTaskLine = pauseTaskLine;
     }
 }

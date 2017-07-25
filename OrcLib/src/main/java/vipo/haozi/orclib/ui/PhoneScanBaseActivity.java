@@ -5,6 +5,9 @@ import android.app.Service;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -49,7 +52,7 @@ import static android.support.v4.content.PermissionChecker.PERMISSION_GRANTED;
  * Time: 10:51
  */
 
-public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceHolder.Callback, Camera.PreviewCallback, View.OnClickListener{
+public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceHolder.Callback, Camera.PreviewCallback, View.OnClickListener,SensorEventListener {
 
     private static final String TAG = "PhoneScan";
     /**恢复扫描*/
@@ -83,8 +86,8 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     private boolean isTakePic = false;
     /**是否识别成功标记*/
     protected boolean isRecogSuccess;
-    /**设置是否刷新扫描区域参数*/
-    private boolean isRefreshScanarea = true;
+    /**扫描请求接受标记*/
+    private boolean isScanAcepted = false;
     /**UI线程处理器*/
     private Handler mHandler;
     /**识别进程*/
@@ -93,6 +96,12 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     private TimerTask autoFoucusTimer;
     /**对焦时间计时器*/
     private Timer focustimeAuto;
+
+    private long lastTime;
+    private boolean isStateAutoFocusing = false;
+    private float lastX;
+    private float lastY;
+    private float lastZ;
 
     /**
      * (non-Javadoc)
@@ -103,7 +112,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         super.onCreate(savedInstanceState);
         //加载资源文件到指定目录
         TessHelper.getInstance().init(this);
-        RecogThread.stopAllScan();
+        //RecogThread.stopAllScan();
 
         if(isCameraGranted() == false){
             //提示权限不足
@@ -192,7 +201,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
                             }
                         }
                     }else if (msg.what == 3) {
-                        isRefreshScanarea = true;
+                        //isRefreshScanarea = true;
                     }else if(msg.what == HANDLER_RECOVERSCAN){
                         //恢复自动识别功能
                         continueScan();
@@ -336,8 +345,12 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             try {
                 if (camera.getParameters().getSupportedFocusModes() != null &&
                         camera.getParameters().getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+                    isStateAutoFocusing = true;
+                    ThreadMangaer.getInstance().setPauseTaskLine(isStateAutoFocusing);
                     camera.autoFocus(new Camera.AutoFocusCallback() {
                         public void onAutoFocus(boolean success, Camera camera) {
+                            isStateAutoFocusing = false;
+                            ThreadMangaer.getInstance().setPauseTaskLine(isStateAutoFocusing);
                             if (success) {
                                 //对焦成功
                             }
@@ -356,6 +369,10 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
     }
 
     private void startRecog(byte[] data, Camera camera){
+        if(isScanAcepted == true){
+            return;
+        }
+        isScanAcepted = true;
         //初始化识别进程
         recogThread = new RecogThread(camera, iv_camera_scanarea, data, new RecogTaskListener() {
             @Override
@@ -373,6 +390,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             public void recogError(Exception e) {}
         });
         ThreadMangaer.getInstance().excuteTaskInSingle(recogThread);
+        isScanAcepted = false;
     }
 
     private Runnable logTask;
@@ -485,4 +503,49 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
         super.onPause();
         CloseCameraAndStopTimer();
     }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+
+            long currentTime = System.currentTimeMillis();
+            long gabOfTime = (currentTime - lastTime);
+            if (gabOfTime > 1000) {
+                lastTime = currentTime;
+                // TODO Auto-generated method stub
+                float x = event.values[0];
+                float y = event.values[1];
+                float z = event.values[2];
+
+                if (camera == null) {
+                    lastX = x;
+                    lastY = y;
+                    lastZ = z;
+                }
+
+                float deltaX = Math.abs(lastX - x);
+                float deltaY = Math.abs(lastY - y);
+                float deltaZ = Math.abs(lastZ - z);
+                //通过计算重力感应来激活自动对焦
+                if (camera != null && deltaX > 0.2 && !isStateAutoFocusing) { //AUTOFOCUS (while it is not autofocusing)
+                    autoFocus();
+                }
+                if (camera != null && deltaY > 0.2 && !isStateAutoFocusing) { //AUTOFOCUS (while it is not autofocusing)
+                    autoFocus();
+
+                }
+                if (camera != null && deltaZ > 0.2 && !isStateAutoFocusing) { //AUTOFOCUS (while it is not autofocusing) */
+                    autoFocus();
+                }
+
+                lastX = x;
+                lastY = y;
+                lastZ = z;
+
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 }

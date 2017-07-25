@@ -13,8 +13,8 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 
+import vipo.haozi.orclib.ocrtools.CGlobal;
 import vipo.haozi.orclib.utils.CameraUtils;
-import vipo.haozi.orclib.utils.CameraViewRotateUtils;
 import vipo.haozi.orclib.utils.OpenCvHelper;
 import vipo.haozi.orclib.utils.TessHelper;
 
@@ -61,47 +61,49 @@ public class RecogThread extends Thread implements RecognizeTaskItf{
 
     @Override
     public void run() {
-        //如果关闭则退出识别
-        if (checkRecogStop()) {
-            previewImgData = null;
-            return;
-        }
-        setRecogingStart();
-        //记录起始时间
-        time = System.currentTimeMillis();
-        //转换原始图像数据
-        int width = camera.getParameters().getPreviewSize().width;
-        int height = camera.getParameters().getPreviewSize().height;
-        //检查数据是否为空
-        if(previewImgData == null || checkRecogStop()){
-            previewImgData = null;
-            return;
-        }
-        //转换图像
-        byte[] tempData = CameraViewRotateUtils.rotateYUV420Degree90(previewImgData,width, height);
-        //清空引用数据
-        previewImgData = null;
-        //重新设置识别区域和识别OCRID
-        if (isRefreshScanarea || scanareaRect == null) {
-            //初始化扫描区域缓存
-            scanareaRect = new Rect();
-            //获取扫描坐标
-            iv_camera_scanarea.getGlobalVisibleRect(scanareaRect);
-        }
-        //裁剪图形区域进行识别
         try{
+            //如果关闭则退出识别
+            if (checkRecogStop()) {
+                previewImgData = null;
+                return;
+            }
+            setRecogingStart();
+            //记录起始时间
+            time = System.currentTimeMillis();
+            //转换原始图像数据
+            int width = camera.getParameters().getPreviewSize().width;
+            int height = camera.getParameters().getPreviewSize().height;
+            //检查数据是否为空
+            if(previewImgData == null || checkRecogStop()){
+                previewImgData = null;
+                setRecogingStop();
+                return;
+            }
+            ////转换图像
+            //byte[] tempData = CameraViewRotateUtils.rotateYUV420Degree90(previewImgData,width, height);
+            ////清空引用数据
+            //previewImgData = null;
+            //重新设置识别区域和识别OCRID
+            if (isRefreshScanarea || scanareaRect == null) {
+                //初始化扫描区域缓存
+                scanareaRect = new Rect();
+                //获取扫描坐标
+                iv_camera_scanarea.getGlobalVisibleRect(scanareaRect);
+            }
             //检查是否停止识别
             if(checkRecogStop()){return;}
-            //识别
-            Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(tempData, camera, scanareaRect);
+            ////识别
+            //Bitmap imgBitmap= CameraUtils.getBitmapFromPreview(tempData, camera, scanareaRect);
+            Rect scropRect = CGlobal.GetRotateRect( scanareaRect,90);
+            Bitmap imgBitmap= CGlobal.makeCropedGrayBitmap(previewImgData, width, height, 90, scropRect);
+            previewImgData = null;
             //检查是否停止识别
             if(checkRecogStop()){return;}
             //拆分识别区域
             OpenCvHelper.getInstance().mattingImage(imgBitmap,new OpenCvCallback());
-
             //recogOnTessert(imgBitmap);
             //setRecogingStop();
-            //Log.i(TAG, "------------->>Recoging finished...");
+            Log.i(TAG, "------------->>Recoging finished...！！！！！");
         }catch (Exception e){
             setRecogingStop();
             e.printStackTrace();
@@ -167,6 +169,9 @@ public class RecogThread extends Thread implements RecognizeTaskItf{
                 //如果成功识别电话号码，直接完成识别
                 if (TessHelper.isMobilePhone(recogOnTessert(localBitmap))){
                     break;
+                }else if((System.currentTimeMillis() - time) > 2000){
+                    Log.i(TAG, "recog out of time ");
+                    break;
                 }
             }
             setRecogingStop();
@@ -198,9 +203,9 @@ public class RecogThread extends Thread implements RecognizeTaskItf{
                 recogTaskListener.recogError(exception);
             }
             setRecogingStop();
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     private String recogOnTessert(Bitmap localBitmap){
