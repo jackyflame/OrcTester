@@ -362,7 +362,7 @@ public class PhoneScanBaseActivity extends AppCompatActivity implements SurfaceH
             } catch (Exception e) {
                 e.printStackTrace();
                 camera.stopPreview();
-                camera.startPreview();
+                //camera.startPreview();
                 Toast.makeText(this, R.string.toast_autofocus_failure,Toast.LENGTH_SHORT).show();
             }
         }
