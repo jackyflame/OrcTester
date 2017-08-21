@@ -36,6 +36,12 @@
             android:theme="@style/Theme.AppCompat.NoActionBar" />
 
         <activity
+            android:name=".ui.PhoneScanBaseActivity2"
+            android:configChanges="orientation|keyboardHidden|screenSize|navigation"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
             android:name=".ui.ErrorAuthorityDailogActivity"
             android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_errortips"

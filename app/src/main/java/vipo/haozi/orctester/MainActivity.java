@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
-import vipo.haozi.orclib.ui.PhoneScanBaseActivity;
+import vipo.haozi.orclib.ui.PhoneScanBaseActivity2;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -16,7 +16,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onTestClick(View view){
-        Intent intent = new Intent(this,PhoneScanBaseActivity.class);
+        Intent intent = new Intent(this,PhoneScanBaseActivity2.class);
         startActivity(intent);
     }
 }
